@@ -1,6 +1,6 @@
 # Seattle Places
 
-Sample project which allows you to search for places in the Seattle area using [Forsquare Places API](https://developer.foursquare.com/places-api). Search results are represented in List and [Map](https://developers.google.com/maps/documentation/android-sdk/intro) formats. Each item is clickable and navigates you to the detailed page with additional information inside (description, phone, working hours, etc). Page with details also contains static map representation using [Google Static Map API](https://developers.google.com/maps/documentation/maps-static/intro) are used with 2 markers which indicate the city center and current item location.
+Sample project which allows you to search for places in the Seattle area using [Foursquare Places API](https://developer.foursquare.com/places-api). Search results are represented in List and [Map](https://developers.google.com/maps/documentation/android-sdk/intro) formats. Each item is clickable and navigates you to the detailed page with additional information inside (description, phone, working hours, etc). Page with details also contains static map representation using [Google Static Map API](https://developers.google.com/maps/documentation/maps-static/intro) are used with 2 markers which indicate the city center and current item location.
 
 ### Installing
 Steps to run the project using the command line:
