@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
 import com.dzhucinski.seattleplaces.storage.PlacesDatabase
 import com.dzhucinski.seattleplaces.storage.Venue
+import java.util.concurrent.*
 
 /**
  * Created by Denis Zhuchinski on 4/10/19.
@@ -23,16 +24,17 @@ interface FavoritesRepository {
 }
 
 
-class FavoritesRepositoryImpl(private val placesDatabase: PlacesDatabase) : FavoritesRepository {
+class FavoritesRepositoryImpl(private val placesDatabase: PlacesDatabase, private val executor: Executor) :
+    FavoritesRepository {
 
     override fun isInFavorites(id: String): LiveData<Venue?> = placesDatabase.venueDao().isFavorite(id)
 
     override fun add(id: String) {
-        Thread(Runnable { placesDatabase.venueDao().insertVenue(Venue(id)) }).start()
+        executor.execute { placesDatabase.venueDao().insertVenue(Venue(id)) }
     }
 
     override fun remove(id: String) {
-        Thread(Runnable { placesDatabase.venueDao().deleteById(id) }).start()
+        executor.execute { placesDatabase.venueDao().deleteById(id) }
     }
 
     override fun getItemIds(): LiveData<Set<String>> {

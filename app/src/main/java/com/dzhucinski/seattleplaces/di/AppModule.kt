@@ -20,6 +20,8 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
@@ -49,11 +51,13 @@ val appModule = module {
             .create(FoursquareService::class.java)
     }
 
+    single<Executor> { Executors.newSingleThreadExecutor() }
+
     single { Room.databaseBuilder(androidApplication(), PlacesDatabase::class.java, DB_NAME).build() }
 
     single<PlacesRepository> { PlacesRepositoryImpl(get(), get()) }
 
-    single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
+    single<FavoritesRepository> { FavoritesRepositoryImpl(get(), get()) }
 
     single<ResourceProvider> { ResourceProviderImpl(androidApplication()) }
 
