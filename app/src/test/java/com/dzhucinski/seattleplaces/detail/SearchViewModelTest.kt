@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
@@ -54,6 +54,7 @@ class SearchViewModelTest {
     private val venueResponse = VenueResponse(venue, null)
     private val venueResponseLiveData = MutableLiveData<VenueResponse>()
     private val placesResponse = PlacesResponse(listOf(venue), "")
+    private val placesResponseError = PlacesResponse(emptyList(), NETWORK_ERROR)
 
     private val favoriteResponse = MutableLiveData<Set<String>>()
     private val searchResultLiveData = MutableLiveData<PlacesResponse>()
@@ -90,7 +91,7 @@ class SearchViewModelTest {
 
     @Test
     fun `test view model's search results`() {
-        whenever(placesRepository.search(anyString(), anyString(), ArgumentMatchers.anyInt())).then {
+        whenever(placesRepository.search(anyString(), anyString(), anyInt())).then {
             placesRepository.getSearchResultLiveData() as MutableLiveData
             (placesRepository.getSearchResultLiveData() as MutableLiveData).value = placesResponse
             it
@@ -119,11 +120,31 @@ class SearchViewModelTest {
         }
     }
 
+    @Test
+    fun `test search with network error`() {
+        whenever(placesRepository.search(anyString(), anyString(), anyInt())).then {
+            placesRepository.getSearchResultLiveData() as MutableLiveData
+            (placesRepository.getSearchResultLiveData() as MutableLiveData).value = placesResponseError
+            it
+        }
+
+        searchViewModel.performSearch(QUERY)
+
+        searchViewModel.errorLiveData.observeForever {
+            assertEquals(NETWORK_ERROR, it)
+        }
+
+        searchViewModel.venuesLiveData.observeForever {
+            assertEquals(emptyList<SearchViewModel.VenueItem>(), it)
+        }
+    }
+
     companion object {
 
         val SAVED_IDs = setOf("52d456c811d24128cdd7bc8b", "57e95a82498e0a3995a43e90")
 
         const val QUERY = "Coffee"
+        const val NETWORK_ERROR = "Something went wrong"
 
         const val ID = "57e95a82498e0a3995a43e90"
         const val TITLE = "Anchorhead Coffee Co"
