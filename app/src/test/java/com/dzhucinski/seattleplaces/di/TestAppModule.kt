@@ -2,11 +2,11 @@ package com.dzhucinski.seattleplaces.di
 
 import androidx.room.Room
 import com.dzhucinski.seattleplaces.detail.DetailViewModel
-import com.dzhucinski.seattleplaces.repository.PlacesRepository
-import com.dzhucinski.seattleplaces.repository.PlacesRepositoryImpl
 import com.dzhucinski.seattleplaces.network.FoursquareService
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
 import com.dzhucinski.seattleplaces.repository.FavoritesRepositoryImpl
+import com.dzhucinski.seattleplaces.repository.PlacesRepository
+import com.dzhucinski.seattleplaces.repository.PlacesRepositoryImpl
 import com.dzhucinski.seattleplaces.search.SearchViewModel
 import com.dzhucinski.seattleplaces.storage.DB_NAME
 import com.dzhucinski.seattleplaces.storage.PlacesDatabase
@@ -25,13 +25,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
- * Created by Denis Zhuchinski on 4/10/19.
- *
- * Koin module to create and provide dependencies in the App
- *
+ * Created by Denis Zhuchinski on 2019-04-22.
  */
 
-val appModule = module {
+val testAppModule = module {
 
     single<OkHttpClient> {
         val builder = OkHttpClient.Builder()
@@ -55,16 +52,12 @@ val appModule = module {
 
     single { Room.databaseBuilder(androidApplication(), PlacesDatabase::class.java, DB_NAME).build() }
 
-    single<ResourceProvider> { ResourceProviderImpl(androidApplication()) }
-}
-
-val repositoryModule = module {
     single<PlacesRepository> { PlacesRepositoryImpl(get(), get()) }
 
     single<FavoritesRepository> { FavoritesRepositoryImpl(get(), get()) }
-}
 
-val viewModelModule = module {
+    single<ResourceProvider> { ResourceProviderImpl(androidApplication()) }
+
     viewModel { SearchViewModel(get(), get()) }
 
     viewModel { (id: String) -> DetailViewModel(id, get(), get(), get()) }

@@ -27,7 +27,7 @@ class SearchViewModel(
 
     private var query: String = ""
 
-    val liveData = MutableLiveData<List<VenueItem>>()
+    val venuesLiveData = MutableLiveData<List<VenueItem>>()
     val progressLiveData = MutableLiveData<Boolean>()
     val errorLiveData = MutableLiveData<String>()
 
@@ -37,9 +37,9 @@ class SearchViewModel(
 
         progressLiveData.value = false
         if (query.isEmpty()) {
-            liveData.value = emptyList()
+            venuesLiveData.value = emptyList()
         } else {
-            liveData.value = convertToViewModel(places.venues, favorites)
+            venuesLiveData.value = mapToUiModel(places.venues, favorites)
         }
 
         if (places.errorMsg != null) {
@@ -71,7 +71,7 @@ class SearchViewModel(
         favoritesRepository.remove(id)
     }
 
-    private fun convertToViewModel(values: List<Venue>, favorites: Set<String>): List<VenueItem> {
+    private fun mapToUiModel(values: List<Venue>, favorites: Set<String>): List<VenueItem> {
         val venuesItemList = mutableListOf<VenueItem>()
         values.forEach {
             val venueItem =

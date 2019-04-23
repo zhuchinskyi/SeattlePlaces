@@ -2,6 +2,8 @@ package com.dzhucinski.seattleplaces
 
 import android.app.Application
 import com.dzhucinski.seattleplaces.di.appModule
+import com.dzhucinski.seattleplaces.di.repositoryModule
+import com.dzhucinski.seattleplaces.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -16,7 +18,7 @@ class App : Application() {
         startKoin {
             androidLogger()
             androidContext(this@App)
-            modules(appModule)
+            modules(appModule, repositoryModule, viewModelModule)
         }
     }
 }

@@ -45,7 +45,7 @@ class SearchActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
         })
 
         searchViewModel
-            .liveData
+            .venuesLiveData
             .distinct()
             .observe(this, Observer<List<SearchViewModel.VenueItem>> {
                 searchItems.clear()
