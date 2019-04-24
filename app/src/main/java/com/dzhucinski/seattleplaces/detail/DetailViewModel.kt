@@ -8,12 +8,14 @@ import android.view.View
 import android.widget.ImageButton
 import com.dzhucinski.seattleplaces.repository.PlacesRepository
 import androidx.databinding.ObservableField
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 import com.dzhucinski.seattleplaces.BuildConfig
 import com.dzhucinski.seattleplaces.R
 import com.dzhucinski.seattleplaces.network.Venue
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
+import com.dzhucinski.seattleplaces.repository.VenueResponse
 import com.dzhucinski.seattleplaces.search.SEATTLE_LAT
 import com.dzhucinski.seattleplaces.search.SEATTLE_LNG
 import com.dzhucinski.seattleplaces.util.ResourceProvider
@@ -37,7 +39,6 @@ class DetailViewModel(
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
-    val errorLiveData = MediatorLiveData<String>()
     private var urlStr: String = ""
     private var phoneStr: String = ""
 
@@ -50,81 +51,74 @@ class DetailViewModel(
     val mapUrl = ObservableField<String>()
     val url = ObservableField<String>()
 
+    private val venueLiveData: LiveData<VenueResponse> = placesRepository.getDetails(id)
+    val errorLiveData = MediatorLiveData<String>()
+
+    private val venueObserver = Observer<VenueResponse> { updateView(it) }
+
     init {
-        loadDetails()
+        favoritesRepository.isInFavorites(id).observeOnce(Observer { isSelected.set(it != null) })
+
+        venueLiveData.observeForever(venueObserver)
     }
 
-    /**
-     * Get venue details by ID and update observable fields to update the UI
-     */
-    private fun loadDetails() {
-        // Set selected state
-        favoritesRepository.isInFavorites(id).observeOnce(Observer {
-            isSelected.set(it != null)
-        })
-
-        // Get venue details and update the UI
-        placesRepository
-            .getDetails(id)
-            .observeOnce(Observer {
-                val venueResponse = it
-                if (venueResponse.errorMsg != null) {
-                    errorLiveData.value = "${venueResponse.errorMsg}"
-                }
-                val venue = venueResponse.venue
-                urlStr = venue?.canonicalUrl ?: ""
-                phoneStr = venue?.contact?.phone ?: ""
-                val statusStr = venue?.hours?.status ?: ""
-                val priceStr = venue?.price?.message ?: ""
+    private fun updateView(it: VenueResponse) {
+        if (it.errorMsg != null) {
+            errorLiveData.value = "${it.errorMsg}"
+        }
+        val venue = it.venue
+        urlStr = venue?.canonicalUrl ?: ""
+        phoneStr = venue?.contact?.phone ?: ""
+        val statusStr = venue?.hours?.status ?: ""
+        val priceStr = venue?.price?.message ?: ""
 
 
-                title.set(venue?.name)
-                description.set((venue?.description))
+        title.set(venue?.name)
+        description.set((venue?.description))
 
-                if (urlStr.isNotEmpty())
-                    url.set(
-                        String.format(
-                            resourceProvider.getString(
-                                R.string.generic_url_text
-                            ), urlStr
-                        )
-                    )
+        if (urlStr.isNotEmpty())
+            url.set(
+                String.format(
+                    resourceProvider.getString(
+                        R.string.generic_url_text
+                    ), urlStr
+                )
+            )
 
-                if (phoneStr.isNotEmpty())
-                    phone.set(
-                        String.format(
-                            resourceProvider.getString(
-                                R.string.generic_phone_text
-                            ),
-                            phoneStr
-                        )
-                    )
+        if (phoneStr.isNotEmpty())
+            phone.set(
+                String.format(
+                    resourceProvider.getString(
+                        R.string.generic_phone_text
+                    ),
+                    phoneStr
+                )
+            )
 
-                if (statusStr.isNotEmpty())
-                    hours.set(
-                        String.format(
-                            resourceProvider.getString(
-                                R.string.generic_status_text
-                            ),
-                            statusStr
-                        )
-                    )
-
-
-                if (priceStr.isNotEmpty())
-                    price.set(
-                        String.format(
-                            resourceProvider.getString(
-                                R.string.generic_price_text
-                            ),
-                            venue?.price?.tier,
-                            priceStr
-                        )
-                    )
+        if (statusStr.isNotEmpty())
+            hours.set(
+                String.format(
+                    resourceProvider.getString(
+                        R.string.generic_status_text
+                    ),
+                    statusStr
+                )
+            )
 
 
-                mapUrl.set(buildStaticMapUrl(venue))
-            })
+        if (priceStr.isNotEmpty())
+            price.set(
+                String.format(
+                    resourceProvider.getString(
+                        R.string.generic_price_text
+                    ),
+                    venue?.price?.tier,
+                    priceStr
+                )
+            )
+
+
+        mapUrl.set(buildStaticMapUrl(venue))
     }
 
     private fun buildStaticMapUrl(venue: Venue?) =
@@ -168,5 +162,10 @@ class DetailViewModel(
             favoritesRepository.add(id)
         }
         imageButton.isSelected = !isSelected
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        venueLiveData.removeObserver(venueObserver)
     }
 }
