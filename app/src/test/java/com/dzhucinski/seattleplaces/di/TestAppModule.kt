@@ -58,7 +58,7 @@ val testAppModule = module {
 
     single<ResourceProvider> { ResourceProviderImpl(androidApplication()) }
 
-    viewModel { SearchViewModel(get(), get()) }
+    viewModel { SearchViewModel(get(), get(), get()) }
 
     viewModel { (id: String) -> DetailViewModel(id, get(), get(), get()) }
 }

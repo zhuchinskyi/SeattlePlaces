@@ -3,10 +3,12 @@ package com.dzhucinski.seattleplaces.search
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.lifecycle.*
+import com.dzhucinski.seattleplaces.R
 import com.dzhucinski.seattleplaces.repository.PlacesRepository
 import com.dzhucinski.seattleplaces.network.Venue
 import com.dzhucinski.seattleplaces.repository.PlacesResponse
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
+import com.dzhucinski.seattleplaces.util.ResourceProvider
 import com.dzhucinski.seattleplaces.util.zip
 
 /**
@@ -21,7 +23,8 @@ const val DEFAULT_ITEMS_LIMIT = 30
 
 class SearchViewModel(
     private val placesRepository: PlacesRepository,
-    private val favoritesRepository: FavoritesRepository
+    private val favoritesRepository: FavoritesRepository,
+    private val resourceProvider: ResourceProvider
 ) :
     ViewModel() {
 
@@ -61,6 +64,14 @@ class SearchViewModel(
         progressLiveData.value = true
 
         placesRepository.search(query, SEARCH_LOCATION, DEFAULT_ITEMS_LIMIT)
+    }
+
+    fun onMapViewClick(listener: MapClickHandler) {
+        if (venuesLiveData.value.isNullOrEmpty()) {
+            listener.showError(resourceProvider.getString(R.string.no_content_msg))
+        } else {
+            listener.showMap(venuesLiveData.value!!)
+        }
     }
 
     fun addToFavorites(id: String) {
@@ -193,5 +204,10 @@ class SearchViewModel(
     override fun onCleared() {
         super.onCleared()
         searchResultLiveData.removeObserver(searchResultObserver)
+    }
+
+    interface MapClickHandler {
+        fun showMap(list: List<VenueItem>)
+        fun showError(msg: String)
     }
 }

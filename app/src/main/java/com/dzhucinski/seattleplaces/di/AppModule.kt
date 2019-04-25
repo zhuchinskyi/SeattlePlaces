@@ -65,7 +65,7 @@ val repositoryModule = module {
 }
 
 val viewModelModule = module {
-    viewModel { SearchViewModel(get(), get()) }
+    viewModel { SearchViewModel(get(), get(), get()) }
 
     viewModel { (id: String) -> DetailViewModel(id, get(), get(), get()) }
 }

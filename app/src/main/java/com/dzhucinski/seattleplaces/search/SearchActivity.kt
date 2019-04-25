@@ -5,6 +5,7 @@ import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -76,12 +77,20 @@ class SearchActivity : AppCompatActivity(), SearchView.OnQueryTextListener {
 
         fabMap.setOnClickListener { view ->
 
-            val arrayList = ArrayList<SearchViewModel.VenueItem>()
-            arrayList.addAll(adapter.getData())
+            searchViewModel.onMapViewClick(object : SearchViewModel.MapClickHandler {
 
-            val intent = Intent(view.context, MapViewActivity::class.java)
-            intent.putParcelableArrayListExtra(KEY_MAP_DETAILS, arrayList)
-            view.context.startActivity(intent)
+                override fun showMap(list: List<SearchViewModel.VenueItem>) {
+                    val arrayList = ArrayList<SearchViewModel.VenueItem>()
+                    arrayList.addAll(list)
+                    val intent = Intent(view.context, MapViewActivity::class.java)
+                    intent.putParcelableArrayListExtra(KEY_MAP_DETAILS, arrayList)
+                    view.context.startActivity(intent)
+                }
+
+                override fun showError(msg: String) {
+                    Toast.makeText(view.context, msg, Toast.LENGTH_LONG).show()
+                }
+            })
         }
     }
 

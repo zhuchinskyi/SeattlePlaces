@@ -2,23 +2,25 @@ package com.dzhucinski.seattleplaces.detail
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
+import com.dzhucinski.seattleplaces.R
 import com.dzhucinski.seattleplaces.network.Venue
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
 import com.dzhucinski.seattleplaces.repository.PlacesRepository
 import com.dzhucinski.seattleplaces.repository.PlacesResponse
 import com.dzhucinski.seattleplaces.repository.VenueResponse
 import com.dzhucinski.seattleplaces.search.SearchViewModel
-import com.nhaarman.mockitokotlin2.whenever
+import com.dzhucinski.seattleplaces.util.ResourceProvider
+import com.nhaarman.mockitokotlin2.*
 import org.junit.Before
 
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
-import org.mockito.ArgumentMatchers.anyString
+import org.mockito.ArgumentMatchers.*
+
 
 /**
  * Created by Denis Zhuchinski on 4/15/19.
@@ -33,6 +35,9 @@ class SearchViewModelTest {
 
     @Mock
     lateinit var favoritesRepository: FavoritesRepository
+
+    @Mock
+    lateinit var resourceProvider: ResourceProvider
 
     private lateinit var searchViewModel: SearchViewModel
 
@@ -71,8 +76,9 @@ class SearchViewModelTest {
         whenever(placesRepository.getSearchResultLiveData()).thenReturn(searchResultLiveData)
         whenever(placesRepository.getDetails(anyString())).thenReturn(venueResponseLiveData)
         whenever(favoritesRepository.getItemIds()).thenReturn(favoriteResponse)
+        whenever(resourceProvider.getString(R.string.no_content_msg)).thenReturn(DEFAULT_ERROR_NO_DATA)
 
-        searchViewModel = SearchViewModel(placesRepository, favoritesRepository)
+        searchViewModel = SearchViewModel(placesRepository, favoritesRepository, resourceProvider)
     }
 
     @Test
@@ -139,6 +145,52 @@ class SearchViewModelTest {
         }
     }
 
+    @Test
+    fun `test map click with search results`() {
+        val venueList = mutableListOf<SearchViewModel.VenueItem>()
+        venueList.add(
+            SearchViewModel.VenueItem(
+                ID,
+                TITLE,
+                IMAGE_CATEGORY_NAME,
+                DESCRIPTION,
+                ADDRESS,
+                LAT,
+                LNG,
+                URL,
+                DISTANCE_TITLE,
+                true,
+                IMAGE_PREFIX
+            )
+        )
+        searchViewModel.venuesLiveData.value = venueList
+
+        val mock = mock<SearchViewModel.MapClickHandler>()
+        searchViewModel.onMapViewClick(mock)
+        argumentCaptor<List<SearchViewModel.VenueItem>>().apply {
+            verify(mock, times(1)).showMap(capture())
+
+            assertEquals(1, allValues.size)
+            assertEquals(venueList, firstValue)
+
+            verify(mock, never()).showError(anyString())
+        }
+    }
+
+    @Test
+    fun `test map click with empty data`() {
+        searchViewModel.venuesLiveData.value = mutableListOf()
+
+        val mock = mock<SearchViewModel.MapClickHandler>()
+        searchViewModel.onMapViewClick(mock)
+        argumentCaptor<String>().apply {
+            verify(mock, times(1)).showError(capture())
+
+            assertEquals(1, allValues.size)
+            assertEquals(DEFAULT_ERROR_NO_DATA, firstValue)
+        }
+    }
+
     companion object {
 
         val SAVED_IDs = setOf("52d456c811d24128cdd7bc8b", "57e95a82498e0a3995a43e90")
@@ -168,5 +220,6 @@ class SearchViewModelTest {
         const val DISTANCE_TITLE = "0.51 miles of the city center"
         const val SEARCH_LOCATION = "Seattle,+WA"
         const val DEFAULT_ITEMS_LIMIT = 30
+        const val DEFAULT_ERROR_NO_DATA = "Try to search first"
     }
 }
