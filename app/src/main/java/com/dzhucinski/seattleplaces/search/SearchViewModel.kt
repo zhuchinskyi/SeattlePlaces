@@ -6,10 +6,10 @@ import androidx.lifecycle.*
 import com.dzhucinski.seattleplaces.R
 import com.dzhucinski.seattleplaces.repository.PlacesRepository
 import com.dzhucinski.seattleplaces.network.Venue
-import com.dzhucinski.seattleplaces.repository.PlacesResponse
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
 import com.dzhucinski.seattleplaces.util.ResourceProvider
-import com.dzhucinski.seattleplaces.util.zip
+import kotlinx.coroutines.*
+import retrofit2.HttpException
 
 /**
  * Created by Denis Zhuchinski on 4/11/19.
@@ -30,40 +30,45 @@ class SearchViewModel(
 
     private var query: String = ""
 
+    private val parentJob = SupervisorJob()
+    private val uiScope = CoroutineScope(Dispatchers.Main + parentJob)
+    private val bgScope = CoroutineScope(Dispatchers.IO + parentJob)
+
+
     val venuesLiveData = MutableLiveData<List<VenueItem>>()
     val progressLiveData = MutableLiveData<Boolean>()
     val errorLiveData = MutableLiveData<String>()
-
-    private val searchResultObserver: Observer<Pair<PlacesResponse, Set<String>>> = Observer {
-        val places = it.first
-        val favorites = it.second
-
-        progressLiveData.value = false
-        if (query.isEmpty()) {
-            venuesLiveData.value = emptyList()
-        } else {
-            venuesLiveData.value = mapToUiModel(places.venues, favorites)
-        }
-
-        if (places.errorMsg != null) {
-            errorLiveData.value = places.errorMsg
-        }
-    }
-
-    private val searchResultLiveData = placesRepository
-        .getSearchResultLiveData()
-        .zip(favoritesRepository.getItemIds())
-
-    init {
-        searchResultLiveData.observeForever(searchResultObserver)
-    }
 
     fun performSearch(query: String) {
         this.query = query
 
         progressLiveData.value = true
 
-        placesRepository.search(query, SEARCH_LOCATION, DEFAULT_ITEMS_LIMIT)
+        bgScope.launch {
+            try {
+                val searchResponse = placesRepository.search(query, SEARCH_LOCATION, DEFAULT_ITEMS_LIMIT)
+                val favoriteIds = favoritesRepository.getItemIds()
+
+                withContext(Dispatchers.Main + parentJob) {
+                    if (!searchResponse.isSuccessful) {
+                        errorLiveData.value = resourceProvider.getString(R.string.error_msg)
+                    }
+
+                    progressLiveData.value = false
+                    if (query.isEmpty()) {
+                        venuesLiveData.value = emptyList()
+                    } else {
+                        venuesLiveData.value =
+                            mapToUiModel(searchResponse.body()?.response?.venues ?: emptyList(), favoriteIds)
+                    }
+
+                }
+            } catch (e: HttpException) {
+                errorLiveData.value = resourceProvider.getString(R.string.error_msg_network)
+            } catch (e: Throwable) {
+                errorLiveData.value = resourceProvider.getString(R.string.error_msg)
+            }
+        }
     }
 
     fun onMapViewClick(listener: MapClickHandler) {
@@ -202,8 +207,8 @@ class SearchViewModel(
 
 
     override fun onCleared() {
+        parentJob.cancel()
         super.onCleared()
-        searchResultLiveData.removeObserver(searchResultObserver)
     }
 
     interface MapClickHandler {

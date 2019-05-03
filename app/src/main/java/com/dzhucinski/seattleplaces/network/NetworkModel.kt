@@ -49,6 +49,6 @@ data class Venue(
     }
 }
 
-data class DetailsApiResponse(val meta: Meta, val response: DetailsResponseBody) {
+data class DetailsResponse(val meta: Meta, val response: DetailsResponseBody) {
     data class DetailsResponseBody(val venue: Venue)
 }

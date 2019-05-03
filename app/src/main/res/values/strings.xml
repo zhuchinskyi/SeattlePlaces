@@ -11,5 +11,6 @@
     <string name="generic_phone_text">Phone number: %s</string>
     <string name="generic_status_text">Status: %s</string>
     <string name="error_msg">Something went wrong</string>
+    <string name="error_msg_network">Check your network setting please</string>
     <string name="no_content_msg">Try to search first</string>
 </resources>

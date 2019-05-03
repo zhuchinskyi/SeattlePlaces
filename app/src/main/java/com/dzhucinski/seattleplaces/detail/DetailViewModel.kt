@@ -8,18 +8,16 @@ import android.view.View
 import android.widget.ImageButton
 import com.dzhucinski.seattleplaces.repository.PlacesRepository
 import androidx.databinding.ObservableField
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.Observer
 import com.dzhucinski.seattleplaces.BuildConfig
 import com.dzhucinski.seattleplaces.R
 import com.dzhucinski.seattleplaces.network.Venue
 import com.dzhucinski.seattleplaces.repository.FavoritesRepository
-import com.dzhucinski.seattleplaces.repository.VenueResponse
 import com.dzhucinski.seattleplaces.search.SEATTLE_LAT
 import com.dzhucinski.seattleplaces.search.SEATTLE_LNG
 import com.dzhucinski.seattleplaces.util.ResourceProvider
-import com.dzhucinski.seattleplaces.util.observeOnce
+import kotlinx.coroutines.*
+import java.lang.Exception
 
 
 /**
@@ -39,6 +37,10 @@ class DetailViewModel(
     private val resourceProvider: ResourceProvider
 ) : ViewModel() {
 
+    private val parentJob = Job()
+    private val uiScope = CoroutineScope(Dispatchers.Main + parentJob)
+    private val bgScope = CoroutineScope(Dispatchers.IO + parentJob)
+
     private var urlStr: String = ""
     private var phoneStr: String = ""
 
@@ -51,30 +53,47 @@ class DetailViewModel(
     val mapUrl = ObservableField<String>()
     val url = ObservableField<String>()
 
-    private val venueLiveData: LiveData<VenueResponse> = placesRepository.getDetails(id)
     val errorLiveData = MediatorLiveData<String>()
 
-    private val venueObserver = Observer<VenueResponse> { updateView(it) }
-
     init {
-        favoritesRepository.isInFavorites(id).observeOnce(Observer { isSelected.set(it != null) })
-
-        venueLiveData.observeForever(venueObserver)
+        loadDetails()
     }
 
-    private fun updateView(it: VenueResponse) {
-        if (it.errorMsg != null) {
-            errorLiveData.value = "${it.errorMsg}"
+    private fun loadDetails() {
+        bgScope.launch {
+            try {
+                val detailsResponse = placesRepository.getDetails(id)
+                val isInFavorites = favoritesRepository.isInFavorites(id) != null
+
+                withContext(Dispatchers.Main + parentJob) {
+                    isSelected.set(isInFavorites)
+
+
+                    val details = detailsResponse.body()
+
+                    if (!detailsResponse.isSuccessful || details == null) {
+                        errorLiveData.value = resourceProvider.getString(R.string.error_msg)
+                    } else {
+                        val venue = details.response.venue
+
+                        updateView(venue)
+                    }
+                }
+            } catch (e: Exception) {
+                errorLiveData.value = resourceProvider.getString(R.string.error_msg)
+            }
         }
-        val venue = it.venue
-        urlStr = venue?.canonicalUrl ?: ""
-        phoneStr = venue?.contact?.phone ?: ""
-        val statusStr = venue?.hours?.status ?: ""
-        val priceStr = venue?.price?.message ?: ""
+    }
+
+    private fun updateView(venue: Venue) {
+        urlStr = venue.canonicalUrl ?: ""
+        phoneStr = venue.contact?.phone ?: ""
+        val statusStr = venue.hours?.status ?: ""
+        val priceStr = venue.price?.message ?: ""
 
 
-        title.set(venue?.name)
-        description.set((venue?.description))
+        title.set(venue.name)
+        description.set((venue.description))
 
         if (urlStr.isNotEmpty())
             url.set(
@@ -165,7 +184,7 @@ class DetailViewModel(
     }
 
     override fun onCleared() {
+        parentJob.cancel()
         super.onCleared()
-        venueLiveData.removeObserver(venueObserver)
     }
 }

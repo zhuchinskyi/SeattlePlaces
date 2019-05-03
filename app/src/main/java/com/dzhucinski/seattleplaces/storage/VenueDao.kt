@@ -1,6 +1,5 @@
 package com.dzhucinski.seattleplaces.storage
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 
 /**
@@ -16,8 +15,8 @@ interface VenueDao {
     fun deleteById(id: String)
 
     @Query("SELECT * FROM Venue")
-    fun getVenues(): LiveData<List<Venue>>
+    fun getVenuesAsync(): List<Venue>
 
     @Query("SELECT * FROM Venue WHERE id LIKE :id")
-    fun isFavorite(id: String): LiveData<Venue?>
+    fun isFavorite(id: String): Venue?
 }

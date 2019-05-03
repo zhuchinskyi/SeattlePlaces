@@ -1,7 +1,5 @@
 package com.dzhucinski.seattleplaces.repository
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Transformations
 import com.dzhucinski.seattleplaces.storage.PlacesDatabase
 import com.dzhucinski.seattleplaces.storage.Venue
 import java.util.concurrent.*
@@ -17,17 +15,17 @@ import java.util.concurrent.*
  *
  */
 interface FavoritesRepository {
-    fun getItemIds(): LiveData<Set<String>>
+    suspend fun getItemIds(): Set<String>
     fun add(id: String)
     fun remove(id: String)
-    fun isInFavorites(id: String): LiveData<Venue?>
+    suspend fun isInFavorites(id: String): Venue?
 }
 
 
 class FavoritesRepositoryImpl(private val placesDatabase: PlacesDatabase, private val executor: Executor) :
     FavoritesRepository {
 
-    override fun isInFavorites(id: String): LiveData<Venue?> = placesDatabase.venueDao().isFavorite(id)
+    override suspend fun isInFavorites(id: String): Venue? = placesDatabase.venueDao().isFavorite(id)
 
     override fun add(id: String) {
         executor.execute { placesDatabase.venueDao().insertVenue(Venue(id)) }
@@ -37,8 +35,8 @@ class FavoritesRepositoryImpl(private val placesDatabase: PlacesDatabase, privat
         executor.execute { placesDatabase.venueDao().deleteById(id) }
     }
 
-    override fun getItemIds(): LiveData<Set<String>> {
-        return Transformations.map(placesDatabase.venueDao().getVenues(), ::toSet)
+    override suspend fun getItemIds(): Set<String> {
+        return toSet(placesDatabase.venueDao().getVenuesAsync())
     }
 
     private fun toSet(venues: List<Venue>): Set<String> {

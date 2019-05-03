@@ -13,6 +13,7 @@ import com.dzhucinski.seattleplaces.storage.PlacesDatabase
 import com.dzhucinski.seattleplaces.util.ResourceProvider
 import com.dzhucinski.seattleplaces.util.ResourceProviderImpl
 import com.google.gson.GsonBuilder
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidApplication
@@ -46,6 +47,7 @@ val appModule = module {
         Retrofit.Builder()
             .baseUrl(FoursquareService.API_CLIENT_URL)
             .client(get())
+            .addCallAdapterFactory(CoroutineCallAdapterFactory())
             .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
             .build()
             .create(FoursquareService::class.java)
@@ -59,7 +61,8 @@ val appModule = module {
 }
 
 val repositoryModule = module {
-    single<PlacesRepository> { PlacesRepositoryImpl(get(), get()) }
+
+    single<PlacesRepository> { PlacesRepositoryImpl(get()) }
 
     single<FavoritesRepository> { FavoritesRepositoryImpl(get(), get()) }
 }
